@@ -2,9 +2,6 @@ class 'Tuner'
 
 function Tuner:__init()
 
-	self.enabled = false
-	self.root = 0
-
 	local vehicle = LocalPlayer:GetVehicle()
 	if IsValid(vehicle) and vehicle:GetDriver() == LocalPlayer and vehicle:GetClass() == VehicleClass.Land then
 		self.veh = vehicle
@@ -13,12 +10,7 @@ function Tuner:__init()
 		self.susp = vehicle:GetSuspension()
 	end
 	
-	self.gui = {}
-
-	self:InitVehicle()
-	self:InitTransmission()
-	self:InitAerodynamics()
-	self:InitSuspension()
+	self:InitGUI()
 	
 	Events:Subscribe("KeyUp", self, self.KeyUp)
 	Events:Subscribe("LocalPlayerEnterVehicle", self, self.EnterVehicle)
@@ -27,15 +19,95 @@ function Tuner:__init()
 
 end
 
-function Tuner:InitVehicle()
+function Tuner:InitGUI()
 
-	self.gui.veh = {}
-	self.gui.veh.window = Window.Create()
-	self.gui.veh.window:SetTitle("Vehicle")
-	self.gui.veh.window:SetVisible(self.enabled)
-	self.gui.veh.window:SetSize(Vector2(250, 315))
-	self.gui.veh.window:SetPosition(Vector2(self.root * Render.Width + 270, 200))
+	self.gui = {veh = {}, trans = {}, aero = {}, susp = {}}
+	
+	self.gui.window = Window.Create()
+	self.gui.window:SetVisible(false)
+	self.gui.window:SetTitle("Vehicle Tuner")
+	self.gui.window:SetSize(Vector2(315, 355))
+	self.gui.window:SetPosition(Vector2(0.15 * Render.Width, 0.02 * Render.Height))
+	
+	self.gui.tabs = TabControl.Create(self.gui.window)
+	self.gui.tabs:SetDock(GwenPosition.Fill)
+	
+	self.gui.veh.window = BaseWindow.Create(self.gui.window)
+	self.gui.trans.window = BaseWindow.Create(self.gui.window)
+	self.gui.aero.window = BaseWindow.Create(self.gui.window)
+	self.gui.susp.window = BaseWindow.Create(self.gui.window)
+	
 	self.gui.veh.window:Subscribe("Render", self, self.VehicleUpdate)
+	self.gui.trans.window:Subscribe("Render", self, self.TransmissionUpdate)
+	self.gui.aero.window:Subscribe("Render", self, self.AerodynamicsUpdate)
+	self.gui.susp.window:Subscribe("Render", self, self.SuspensionUpdate)
+	
+	self.gui.veh.button = self.gui.tabs:AddPage("Vehicle", self.gui.veh.window)
+	self.gui.veh.button:Subscribe("Press", function()
+		self.gui.window:SetSize(Vector2(315, 355))
+	end)
+	
+	self.gui.trans.button = self.gui.tabs:AddPage("Transmission", self.gui.trans.window)
+	self.gui.trans.button:Subscribe("Press", function()
+		local gears = self.trans:GetMaxGear()
+		for i = 7, 7 + gears - 1 do
+			self.gui.trans.getters[i]:Show()
+			self.gui.trans.setters[i]:Show()
+		end
+		for i = 7 + gears, 12 do
+			self.gui.trans.getters[i]:Hide()
+			self.gui.trans.setters[i]:Hide()
+		end
+		local count = self.veh:GetWheelCount()
+		for i = 15, 15 + count - 1 do
+			self.gui.trans.getters[i]:Show()
+			self.gui.trans.setters[i]:Show()
+		end
+		for i = 15 + count, 22 do
+			self.gui.trans.getters[i]:Hide()
+			self.gui.trans.setters[i]:Hide()
+		end
+		self.gui.window:SetSize(Vector2(315, 555 - 22 * (8 - count)))	
+	end)
+	
+	self.gui.aero.button = self.gui.tabs:AddPage("Aerodynamics", self.gui.aero.window)
+	self.gui.aero.button:Subscribe("Press", function()
+		self.gui.window:SetSize(Vector2(315, 225))
+	end)
+
+	self.gui.susp.button = self.gui.tabs:AddPage("Suspension", self.gui.susp.window)
+	self.gui.susp.button:Subscribe("Press", function()
+		local count = self.veh:GetWheelCount()
+		for wheel = 1, count do
+			for _,getter in ipairs(self.gui.susp[wheel].getters) do
+				getter:Show()
+			end
+			for _,setter in ipairs(self.gui.susp[wheel].setters) do
+				setter:Show()
+			end
+		end
+		for wheel = count + 1, 8 do
+			for _,getter in ipairs(self.gui.susp[wheel].getters) do
+				getter:Hide()
+			end
+			for _,setter in ipairs(self.gui.susp[wheel].setters) do
+				setter:Hide()
+			end
+		end
+		self.gui.window:SetSize(Vector2(150 + 80 * count, 520))
+	end)
+	
+	self.gui.susp.tabs = TabControl.Create(self.gui.susp.window)
+	self.gui.susp.tabs:SetDock(GwenPosition.Fill)
+	
+	self:InitVehicle()
+	self:InitTransmission()
+	self:InitAerodynamics()
+	self:InitSuspension()
+
+end
+
+function Tuner:InitVehicle()
 	
 	self.gui.veh.labels = {}
 	self.gui.veh.getters = {}
@@ -61,27 +133,18 @@ function Tuner:InitVehicle()
 	self.gui.veh.labels[13]:SetText("Wheel Count")
 	
 	for i, label in ipairs(self.gui.veh.labels) do
-		label:SetPosition(Vector2(2, 5 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for i, getter in ipairs(self.gui.veh.getters) do
-		getter:SetPosition(Vector2(90, 5 + 22 * (i - 1)))
+		getter:SetPosition(Vector2(90, 10 + 22 * (i - 1)))
 		getter:SetSize(Vector2(150, 12))
 	end
 
 end
 
 function Tuner:InitTransmission()
-
-	self.gui.trans = {}
-
-	self.gui.trans.window = Window.Create()
-	self.gui.trans.window:SetTitle("Transmission")
-	self.gui.trans.window:SetVisible(self.enabled)
-	self.gui.trans.window:SetSize(Vector2(260, 515))
-	self.gui.trans.window:SetPosition(Vector2(self.root * Render.Width, 0))
-	self.gui.trans.window:Subscribe("Render", self, self.TransmissionUpdate)
 	
 	self.gui.trans.labels = {}
 	self.gui.trans.getters = {}
@@ -165,36 +228,27 @@ function Tuner:InitTransmission()
 	end
 
 	for i, label in ipairs(self.gui.trans.labels) do
-		label:SetPosition(Vector2(2, 5 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for i, getter in ipairs(self.gui.trans.getters) do
-		getter:SetPosition(Vector2(130, 5 + 22 * (i - 1)))
+		getter:SetPosition(Vector2(150, 10 + 22 * (i - 1)))
 	end
 	
 	for i, setter in pairs(self.gui.trans.setters) do
 		if setter.__type == "TextBoxNumeric" then
-			setter:SetPosition(Vector2(190, 0 + 22 * (i - 1)))
-			setter:SetWidth(55)
+			setter:SetPosition(Vector2(225, 5 + 22 * (i - 1)))
+			setter:SetWidth(57)
 			setter:SetText("")
 		else
-			setter:SetPosition(Vector2(193, 2 + 22 * (i - 1)))
+			setter:SetPosition(Vector2(228, 7 + 22 * (i - 1)))
 		end
 	end
 
 end
 
 function Tuner:InitAerodynamics()
-
-	self.gui.aero = {}
-
-	self.gui.aero.window = Window.Create()
-	self.gui.aero.window:SetTitle("Aerodynamics")
-	self.gui.aero.window:SetVisible(self.enabled)
-	self.gui.aero.window:SetSize(Vector2(250, 190))
-	self.gui.aero.window:SetPosition(Vector2(self.root * Render.Width + 270, 0))
-	self.gui.aero.window:Subscribe("Render", self, self.AerodynamicsUpdate)
 	
 	self.gui.aero.labels = {}
 	self.gui.aero.getters = {}
@@ -253,100 +307,76 @@ function Tuner:InitAerodynamics()
 	end)
 	
 	for i, label in ipairs(self.gui.aero.labels) do
-		label:SetPosition(Vector2(2, 5 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for i, getter in ipairs(self.gui.aero.getters) do
-		getter:SetPosition(Vector2(105, 5 + 22 * (i - 1)))
+		getter:SetPosition(Vector2(150, 10 + 22 * (i - 1)))
 	end
 	
 	for i, setter in pairs(self.gui.aero.setters) do
-		setter:SetPosition(Vector2(180, 0 + 22 * (i - 1)))
-		setter:SetWidth(55)
+		setter:SetPosition(Vector2(225, 5 + 22 * (i - 1)))
+		setter:SetWidth(57)
 		setter:SetText("")
 	end
 
 end
 
 function Tuner:InitSuspension()
-
-	self.gui.susp = {}
-	self.gui.susp.getter = {}
-	self.gui.susp.setter = {}
 	
-	self.gui.susp.getter.window = Window.Create()
-	self.gui.susp.getter.window:SetTitle("Suspension Getter")
-	self.gui.susp.getter.window:SetVisible(self.enabled)
-	self.gui.susp.getter.window:SetSize(Vector2(600, 250))
-	self.gui.susp.getter.window:SetPosition(Vector2(self.root * Render.Width + 530, 0))
-	self.gui.susp.getter.window:Subscribe("Render", self, self.SuspensionUpdate)
-
-	self.gui.susp.setter.window = Window.Create()
-	self.gui.susp.setter.window:SetTitle("Suspension Setter")
-	self.gui.susp.setter.window:SetVisible(self.enabled)
-	self.gui.susp.setter.window:SetSize(Vector2(600, 255))
-	self.gui.susp.setter.window:SetPosition(Vector2(self.root * Render.Width + 530, 260))
+	self.gui.susp.labels = {}
 	
-	self.gui.susp.getter.labels = {}
-	self.gui.susp.setter.labels = {}
-	
-	for i = 1,10 do
-		table.insert(self.gui.susp.getter.labels, Label.Create(self.gui.susp.getter.window))
-		table.insert(self.gui.susp.setter.labels, Label.Create(self.gui.susp.setter.window))
+	for i = 1,20 do
+		table.insert(self.gui.susp.labels, Label.Create(self.gui.susp.window))
 	end
 	
 	for wheel = 1,8 do
-		self.gui.susp.getter[wheel] = {}
-		self.gui.susp.setter[wheel] = {}
-		self.gui.susp.getter[wheel].getters = {}
-		self.gui.susp.setter[wheel].setters = {}
+		self.gui.susp[wheel] = {}
+		self.gui.susp[wheel] = {}
+		self.gui.susp[wheel].getters = {}
+		self.gui.susp[wheel].setters = {}
 		for i = 1,10 do
-			table.insert(self.gui.susp.getter[wheel].getters, Label.Create(self.gui.susp.getter.window))
-			table.insert(self.gui.susp.setter[wheel].setters, TextBoxNumeric.Create(self.gui.susp.setter.window))
+			table.insert(self.gui.susp[wheel].getters, Label.Create(self.gui.susp.window))
+			table.insert(self.gui.susp[wheel].setters, TextBoxNumeric.Create(self.gui.susp.window))
 		end
 	end
 	
-	self.gui.susp.getter.labels[1]:SetText("Length")
-	self.gui.susp.getter.labels[2]:SetText("Strength")
-	self.gui.susp.getter.labels[3]:SetText("Chassis Direction X")
-	self.gui.susp.getter.labels[4]:SetText("Chassis Direction Y")
-	self.gui.susp.getter.labels[5]:SetText("Chassis Direction Z")
-	self.gui.susp.getter.labels[6]:SetText("Chassis Position X")
-	self.gui.susp.getter.labels[7]:SetText("Chassis Position Y")
-	self.gui.susp.getter.labels[8]:SetText("Chassis Position Z")
-	self.gui.susp.getter.labels[9]:SetText("Damping Compression")
-	self.gui.susp.getter.labels[10]:SetText("Damping Relaxation")
+	self.gui.susp.labels[1]:SetText("Length")
+	self.gui.susp.labels[2]:SetText("Strength")
+	self.gui.susp.labels[3]:SetText("Chassis Direction X")
+	self.gui.susp.labels[4]:SetText("Chassis Direction Y")
+	self.gui.susp.labels[5]:SetText("Chassis Direction Z")
+	self.gui.susp.labels[6]:SetText("Chassis Position X")
+	self.gui.susp.labels[7]:SetText("Chassis Position Y")
+	self.gui.susp.labels[8]:SetText("Chassis Position Z")
+	self.gui.susp.labels[9]:SetText("Damping Compression")
+	self.gui.susp.labels[10]:SetText("Damping Relaxation")
 	
-	self.gui.susp.setter.labels[1]:SetText("Length")
-	self.gui.susp.setter.labels[2]:SetText("Strength")
-	self.gui.susp.setter.labels[3]:SetText("Chassis Direction X")
-	self.gui.susp.setter.labels[4]:SetText("Chassis Direction Y")
-	self.gui.susp.setter.labels[5]:SetText("Chassis Direction Z")
-	self.gui.susp.setter.labels[6]:SetText("Chassis Position X")
-	self.gui.susp.setter.labels[7]:SetText("Chassis Position Y")
-	self.gui.susp.setter.labels[8]:SetText("Chassis Position Z")
-	self.gui.susp.setter.labels[9]:SetText("Damping Compression")
-	self.gui.susp.setter.labels[10]:SetText("Damping Relaxation")
-	
-	for i, label in ipairs(self.gui.susp.getter.labels) do
-		label:SetPosition(Vector2(2, 5 + 22 * (i - 1)))
+	self.gui.susp.labels[11]:SetText("Length")
+	self.gui.susp.labels[12]:SetText("Strength")
+	self.gui.susp.labels[13]:SetText("Chassis Direction X")
+	self.gui.susp.labels[14]:SetText("Chassis Direction Y")
+	self.gui.susp.labels[15]:SetText("Chassis Direction Z")
+	self.gui.susp.labels[16]:SetText("Chassis Position X")
+	self.gui.susp.labels[17]:SetText("Chassis Position Y")
+	self.gui.susp.labels[18]:SetText("Chassis Position Z")
+	self.gui.susp.labels[19]:SetText("Damping Compression")
+	self.gui.susp.labels[20]:SetText("Damping Relaxation")
+
+	for i, label in ipairs(self.gui.susp.labels) do
+		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
-	for i, label in ipairs(self.gui.susp.setter.labels) do
-		label:SetPosition(Vector2(2, 5 + 22 * (i - 1)))
-		label:SizeToContents()
-	end
-	
-	for wheel in ipairs(self.gui.susp.getter) do
-		for i, getter in ipairs(self.gui.susp.getter[wheel].getters) do
-			getter:SetPosition(Vector2(145 + 75 * (wheel - 1), 5 + 22 * (i - 1)))
+	for wheel in ipairs(self.gui.susp) do
+		for i, getter in ipairs(self.gui.susp[wheel].getters) do
+			getter:SetPosition(Vector2(150 + 75 * (wheel - 1), 10 + 22 * (i - 1)))
 			getter:SetWidth(70)
 		end
 	end
 	
-	for wheel,v in ipairs(self.gui.susp.setter) do
+	for wheel,v in ipairs(self.gui.susp) do
 	
 		v.setters[1]:Subscribe("ReturnPressed", function(args)
 			self.susp:SetLength(wheel, args:GetValue())
@@ -404,9 +434,9 @@ function Tuner:InitSuspension()
 			args:SetText("")
 		end)		
 	
-		for i, setter in ipairs(self.gui.susp.setter[wheel].setters) do
-			setter:SetPosition(Vector2(145 + 75 * (wheel - 1), 0 + 22 * (i - 1)))
-			setter:SetWidth(55)
+		for i, setter in ipairs(self.gui.susp[wheel].setters) do
+			setter:SetPosition(Vector2(150 + 75 * (wheel - 1), 225 + 22 * (i - 1)))
+			setter:SetWidth(57)
 			setter:SetText("")
 		end
 		
@@ -425,7 +455,7 @@ function Tuner:VehicleUpdate()
 	self.gui.veh.getters[3]:SetText(f("%s", self.veh:GetTemplate()))
 	self.gui.veh.getters[4]:SetText(f("%s", self.veh:GetClass()))
 	self.gui.veh.getters[5]:SetText(f("%s", self.veh:GetDecal()))
-	self.gui.veh.getters[6]:SetText(f("%i", self.veh:GetHealth()))
+	self.gui.veh.getters[6]:SetText(f("%g", self.veh:GetHealth()))
 	self.gui.veh.getters[7]:SetText(f("%s", self.veh:GetDriver()))
 	self.gui.veh.getters[8]:SetText(f("%i", self.veh:GetMass()))
 	self.gui.veh.getters[9]:SetText(f("%i", self.veh:GetTopSpeed()))
@@ -452,31 +482,16 @@ function Tuner:TransmissionUpdate()
 	self.gui.trans.getters[6]:SetText(f("%g", self.trans:GetGear()))
 	
 	local gear_ratios = self.trans:GetGearRatios()
-	for i = 1,6 do
-		if gear_ratios[i] then
-			self.gui.trans.getters[6 + i]:SetText(f("%g", gear_ratios[i]))
-			self.gui.trans.getters[6 + i]:SetVisible(true)
-			self.gui.trans.setters[6 + i]:SetVisible(true)
-		else
-			self.gui.trans.getters[6 + i]:SetVisible(false)
-			self.gui.trans.setters[6 + i]:SetVisible(false)
-		end
+	for wheel, ratio in ipairs(gear_ratios) do
+		self.gui.trans.getters[6 + wheel]:SetText(f("%g", ratio))
 	end
 
 	self.gui.trans.getters[13]:SetText(f("%g", self.trans:GetReverseGearRatio()))
 	self.gui.trans.getters[14]:SetText(f("%g", self.trans:GetPrimaryTransmissionRatio()))
 	
 	local wheel_ratios = self.trans:GetWheelTorqueRatios()
-	
-	for i = 1,8 do
-		if wheel_ratios[i] then
-			self.gui.trans.getters[14 + i]:SetText(f("%g", wheel_ratios[i]))
-			self.gui.trans.getters[14 + i]:SetVisible(true)
-			self.gui.trans.setters[14 + i]:SetVisible(true)
-		else
-			self.gui.trans.getters[14 + i]:SetVisible(false)
-			self.gui.trans.setters[14 + i]:SetVisible(false)
-		end
+	for wheel, ratio in ipairs(wheel_ratios) do
+		self.gui.trans.getters[14 + wheel]:SetText(f("%g", ratio))
 	end
 
 end
@@ -493,70 +508,48 @@ function Tuner:AerodynamicsUpdate()
 	self.gui.aero.getters[4]:SetText(f("%g", self.aero:GetLiftCoefficient()))
 	
 	local gravity = self.aero:GetExtraGravity()
-	self.gui.aero.getters[5]:SetText(f("%f", gravity.x))
-	self.gui.aero.getters[6]:SetText(f("%f", gravity.y))
-	self.gui.aero.getters[7]:SetText(f("%f", gravity.z))
+	self.gui.aero.getters[5]:SetText(f("%.6f", gravity.x))
+	self.gui.aero.getters[6]:SetText(f("%.6f", gravity.y))
+	self.gui.aero.getters[7]:SetText(f("%.6f", gravity.z))
 
 end
 
 function Tuner:SuspensionUpdate()
 
 	if not self.susp then return end
-	
-	local count = self.veh:GetWheelCount()
+
 	local f = string.format
 	
-	for wheel = 1,8 do
-	
-		if wheel <= count then
+	for wheel = 1, self.veh:GetWheelCount() do
+
+		self.gui.susp[wheel].getters[1]:SetText(f("%g", self.susp:GetLength(wheel)))
+		self.gui.susp[wheel].getters[2]:SetText(f("%g", self.susp:GetStrength(wheel)))
 		
-			self.gui.susp.getter[wheel].getters[1]:SetText(f("%g", self.susp:GetLength(wheel)))
-			self.gui.susp.getter[wheel].getters[2]:SetText(f("%g", self.susp:GetStrength(wheel)))
-			
-			local direction = self.susp:GetChassisDirection(wheel)
-			self.gui.susp.getter[wheel].getters[3]:SetText(f("%g", direction.x))
-			self.gui.susp.getter[wheel].getters[4]:SetText(f("%g", direction.y))
-			self.gui.susp.getter[wheel].getters[5]:SetText(f("%g", direction.z))
-			
-			local position = self.susp:GetChassisPosition(wheel)
-			self.gui.susp.getter[wheel].getters[6]:SetText(f("%g", position.x))
-			self.gui.susp.getter[wheel].getters[7]:SetText(f("%g", position.y))
-			self.gui.susp.getter[wheel].getters[8]:SetText(f("%g", position.z))
-			
-			self.gui.susp.getter[wheel].getters[9]:SetText(f("%g", self.susp:GetDampingCompression(wheel)))
-			self.gui.susp.getter[wheel].getters[10]:SetText(f("%g", self.susp:GetDampingRelaxation(wheel)))
-			
-			for i = 1,10 do
-				self.gui.susp.getter[wheel].getters[i]:SetVisible(true)
-			end
-			
-		else
+		local direction = self.susp:GetChassisDirection(wheel)
+		self.gui.susp[wheel].getters[3]:SetText(f("%.6f", direction.x))
+		self.gui.susp[wheel].getters[4]:SetText(f("%.6f", direction.y))
+		self.gui.susp[wheel].getters[5]:SetText(f("%.6f", direction.z))
 		
-			for i = 1,10 do
-				self.gui.susp.getter[wheel].getters[i]:SetVisible(false)
-			end
-			
-		end
+		local position = self.susp:GetChassisPosition(wheel)
+		self.gui.susp[wheel].getters[6]:SetText(f("%.6f", position.x))
+		self.gui.susp[wheel].getters[7]:SetText(f("%.6f", position.y))
+		self.gui.susp[wheel].getters[8]:SetText(f("%.6f", position.z))
 		
+		self.gui.susp[wheel].getters[9]:SetText(f("%g", self.susp:GetDampingCompression(wheel)))
+		self.gui.susp[wheel].getters[10]:SetText(f("%g", self.susp:GetDampingRelaxation(wheel)))
+
 	end
-	
-	self.gui.susp.getter.window:SetWidth(145 + count * 75)
-	self.gui.susp.setter.window:SetWidth(145 + count * 75)
 
 end
 
 function Tuner:KeyUp(args)
 
 	if args.key == string.byte("Z") and IsValid(self.veh) then
-
-		self.enabled = not self.enabled
-		self.gui.veh.window:SetVisible(self.enabled)
-		self.gui.trans.window:SetVisible(self.enabled)
-		self.gui.aero.window:SetVisible(self.enabled)
-		self.gui.susp.getter.window:SetVisible(self.enabled)
-		self.gui.susp.setter.window:SetVisible(self.enabled)
-		Mouse:SetVisible(self.enabled)
-
+		local visible = self.gui.window:GetVisible()
+		self.gui.window:SetVisible(not visible)
+		Mouse:SetVisible(not visible)
+		self.gui.window:SetSize(Vector2(315, 350))
+		self.gui.tabs:SetCurrentTab(self.gui.veh.button)
 	end
 	
 end
@@ -590,13 +583,8 @@ end
 
 function Tuner:Disable()
 
-	self.enabled = false
-	self.gui.veh.window:SetVisible(self.enabled)
-	self.gui.trans.window:SetVisible(self.enabled)
-	self.gui.aero.window:SetVisible(self.enabled)
-	self.gui.susp.getter.window:SetVisible(self.enabled)
-	self.gui.susp.setter.window:SetVisible(self.enabled)
-	Mouse:SetVisible(self.enabled)
+	self.gui.window:SetVisible(false)
+	Mouse:SetVisible(false)
 	self.veh = nil
 	self.trans = nil
 	self.aero = nil
