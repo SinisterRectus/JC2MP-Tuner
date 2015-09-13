@@ -356,7 +356,6 @@ function Tuner:EnterVehicle(args)
 		self.veh = args.vehicle
 		self.trans = args.vehicle:GetTransmission()
 		self.aero = args.vehicle:GetAerodynamics()
-		Chat:Print(tostring(#self.trans:GetWheelTorqueRatios()), Color.Red)
 	end
 	
 end
