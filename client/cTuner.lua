@@ -29,7 +29,7 @@ function Tuner:InitVehicle()
 	self.gui.veh.window = Window.Create()
 	self.gui.veh.window:SetTitle("Vehicle")
 	self.gui.veh.window:SetVisible(self.enabled)
-	self.gui.veh.window:SetSize(Vector2(250, 275))
+	self.gui.veh.window:SetSize(Vector2(250, 295))
 	self.gui.veh.window:SetPosition(Vector2(0.15 * Render.Width + 550, 0))
 	self.gui.veh.window:Subscribe("Render", self, self.VehicleUpdate)
 	
@@ -37,7 +37,7 @@ function Tuner:InitVehicle()
 	self.gui.veh.getters = {}
 	self.gui.veh.setters = {}
 	
-	for i = 1,11 do
+	for i = 1,12 do
 		table.insert(self.gui.veh.labels, Label.Create(self.gui.veh.window))
 		table.insert(self.gui.veh.getters, Label.Create(self.gui.veh.window))
 	end
@@ -52,7 +52,8 @@ function Tuner:InitVehicle()
 	self.gui.veh.labels[8]:SetText("Mass")
 	self.gui.veh.labels[9]:SetText("Top Speed")
 	self.gui.veh.labels[10]:SetText("Max RPM")
-	self.gui.veh.labels[11]:SetText("Torque")
+	self.gui.veh.labels[11]:SetText("Current RPM")
+	self.gui.veh.labels[12]:SetText("Torque")
 	
 	for i, label in ipairs(self.gui.veh.labels) do
 		label:SetPosition(Vector2(2, 5 + 22 * (i - 1)))
@@ -277,7 +278,8 @@ function Tuner:VehicleUpdate()
 	self.gui.veh.getters[8]:SetText(string.format("%i", self.veh:GetMass()))
 	self.gui.veh.getters[9]:SetText(string.format("%i", self.veh:GetTopSpeed()))
 	self.gui.veh.getters[10]:SetText(string.format("%i", self.veh:GetMaxRPM()))
-	self.gui.veh.getters[11]:SetText(string.format("%i", self.veh:GetTorque()))
+	self.gui.veh.getters[11]:SetText(string.format("%i", self.veh:GetRPM()))
+	self.gui.veh.getters[12]:SetText(string.format("%i", self.veh:GetTorque()))
 
 end
 
