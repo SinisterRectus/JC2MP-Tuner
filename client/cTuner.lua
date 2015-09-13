@@ -20,6 +20,7 @@ function Tuner:__init()
 	Events:Subscribe("KeyUp", self, self.KeyUp)
 	Events:Subscribe("LocalPlayerEnterVehicle", self, self.EnterVehicle)
 	Events:Subscribe("LocalPlayerExitVehicle", self, self.ExitVehicle)
+	Events:Subscribe("EntityDespawn", self, self.VehicleDespawn)
 
 end
 
@@ -286,6 +287,8 @@ end
 function Tuner:TransmissionUpdate()
 
 	if not self.trans then return end
+	
+	self.gui.trans.setters[4]:SetChecked(self.trans:GetManual())
 
 	self.gui.trans.getters[1]:SetText(string.format("%g", self.trans:GetUpshiftRPM()))
 	self.gui.trans.getters[2]:SetText(string.format("%g", self.trans:GetDownshiftRPM()))
@@ -364,14 +367,31 @@ end
 
 function Tuner:ExitVehicle(args)
 
-	self.enabled = false
-	self.gui.veh.window:SetVisible(self.enabled)
-	self.gui.trans.window:SetVisible(self.enabled)
-	self.gui.aero.window:SetVisible(self.enabled)
-	Mouse:SetVisible(self.enabled)
-	self.veh = nil
-	self.trans = nil
-	self.aero = nil
+	if self.veh and args.vehicle == self.veh then
+		self.enabled = false
+		self.gui.veh.window:SetVisible(self.enabled)
+		self.gui.trans.window:SetVisible(self.enabled)
+		self.gui.aero.window:SetVisible(self.enabled)
+		Mouse:SetVisible(self.enabled)
+		self.veh = nil
+		self.trans = nil
+		self.aero = nil
+	end
+	
+end
+
+function Tuner:VehicleDespawn(args)
+
+	if args.entity.__type == "Vehicle" and args.entity == self.veh then
+		self.enabled = false
+		self.gui.veh.window:SetVisible(self.enabled)
+		self.gui.trans.window:SetVisible(self.enabled)
+		self.gui.aero.window:SetVisible(self.enabled)
+		Mouse:SetVisible(self.enabled)
+		self.veh = nil
+		self.trans = nil
+		self.aero = nil
+	end
 	
 end
 
