@@ -2,6 +2,8 @@ class 'Tuner'
 
 function Tuner:__init()
 
+	self.advanced = true
+
 	local vehicle = LocalPlayer:GetVehicle()
 	if IsValid(vehicle) and vehicle:GetDriver() == LocalPlayer and vehicle:GetClass() == VehicleClass.Land then
 		self.veh = vehicle
@@ -26,7 +28,7 @@ function Tuner:InitGUI()
 	self.gui.window = Window.Create()
 	self.gui.window:SetVisible(false)
 	self.gui.window:SetTitle("Vehicle Tuner")
-	self.gui.window:SetSize(Vector2(315, 355))
+	self.gui.window:SetSize(Vector2(315, 650))
 	self.gui.window:SetPosition(Vector2(0.15 * Render.Width, 0.02 * Render.Height))
 	
 	self.gui.tabs = TabControl.Create(self.gui.window)
@@ -44,7 +46,11 @@ function Tuner:InitGUI()
 	
 	self.gui.veh.button = self.gui.tabs:AddPage("Vehicle", self.gui.veh.window)
 	self.gui.veh.button:Subscribe("Press", function()
-		self.gui.window:SetSize(Vector2(315, 355))
+		if self.advanced then
+			self.gui.window:SetSize(Vector2(315, 640))
+		else
+			self.gui.window:SetSize(Vector2(315, 353))
+		end
 	end)
 	
 	self.gui.trans.button = self.gui.tabs:AddPage("Transmission", self.gui.trans.window)
@@ -72,7 +78,7 @@ function Tuner:InitGUI()
 	
 	self.gui.aero.button = self.gui.tabs:AddPage("Aerodynamics", self.gui.aero.window)
 	self.gui.aero.button:Subscribe("Press", function()
-		self.gui.window:SetSize(Vector2(315, 225))
+		self.gui.window:SetSize(Vector2(315, 224))
 	end)
 
 	self.gui.susp.button = self.gui.tabs:AddPage("Suspension", self.gui.susp.window)
@@ -94,11 +100,8 @@ function Tuner:InitGUI()
 				setter:Hide()
 			end
 		end
-		self.gui.window:SetSize(Vector2(150 + 80 * count, 520))
+		self.gui.window:SetSize(Vector2(150 + 80 * count, 516))
 	end)
-	
-	self.gui.susp.tabs = TabControl.Create(self.gui.susp.window)
-	self.gui.susp.tabs:SetDock(GwenPosition.Fill)
 	
 	self:InitVehicle()
 	self:InitTransmission()
@@ -118,6 +121,13 @@ function Tuner:InitVehicle()
 		table.insert(self.gui.veh.getters, Label.Create(self.gui.veh.window))
 	end
 	
+	if self.advanced then
+		for i = 13,26 do
+			table.insert(self.gui.veh.labels, Label.Create(self.gui.veh.window))
+			table.insert(self.gui.veh.getters, Label.Create(self.gui.veh.window))
+		end
+	end
+	
 	self.gui.veh.labels[1]:SetText("Name")
 	self.gui.veh.labels[2]:SetText("Model ID")
 	self.gui.veh.labels[3]:SetText("Template")	
@@ -132,14 +142,30 @@ function Tuner:InitVehicle()
 	self.gui.veh.labels[12]:SetText("Torque")
 	self.gui.veh.labels[13]:SetText("Wheel Count")
 	
+	if self.advanced then
+		self.gui.veh.labels[14]:SetText("Colors")
+		self.gui.veh.labels[15]:SetText("Position (raw)")
+		self.gui.veh.labels[16]:SetText("Position (map)")
+		self.gui.veh.labels[17]:SetText("Angle")
+		self.gui.veh.labels[18]:SetText("Angle")
+		self.gui.veh.labels[19]:SetText("Lin Velocity")
+		self.gui.veh.labels[20]:SetText("Lin Speed")
+		self.gui.veh.labels[21]:SetText("Ang Velocity")
+		self.gui.veh.labels[22]:SetText("Ang Speed")
+		self.gui.veh.labels[23]:SetText("0-100 km/h")
+		self.gui.veh.labels[24]:SetText("Peak Lin Speed")
+		self.gui.veh.labels[25]:SetText("Peak Ang Speed")
+		self.gui.veh.labels[26]:SetText("Peak Torque")
+	end
+	
 	for i, label in ipairs(self.gui.veh.labels) do
-		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 5 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for i, getter in ipairs(self.gui.veh.getters) do
-		getter:SetPosition(Vector2(90, 10 + 22 * (i - 1)))
-		getter:SetSize(Vector2(150, 12))
+		getter:SetPosition(Vector2(110, 5 + 22 * (i - 1)))
+		getter:SetSize(Vector2(200, 12))
 	end
 
 end
@@ -228,21 +254,21 @@ function Tuner:InitTransmission()
 	end
 
 	for i, label in ipairs(self.gui.trans.labels) do
-		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 5 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for i, getter in ipairs(self.gui.trans.getters) do
-		getter:SetPosition(Vector2(150, 10 + 22 * (i - 1)))
+		getter:SetPosition(Vector2(150, 5 + 22 * (i - 1)))
 	end
 	
 	for i, setter in pairs(self.gui.trans.setters) do
 		if setter.__type == "TextBoxNumeric" then
-			setter:SetPosition(Vector2(225, 5 + 22 * (i - 1)))
+			setter:SetPosition(Vector2(225, 0 + 22 * (i - 1)))
 			setter:SetWidth(57)
 			setter:SetText("")
 		else
-			setter:SetPosition(Vector2(228, 7 + 22 * (i - 1)))
+			setter:SetPosition(Vector2(228, 2 + 22 * (i - 1)))
 		end
 	end
 
@@ -307,16 +333,16 @@ function Tuner:InitAerodynamics()
 	end)
 	
 	for i, label in ipairs(self.gui.aero.labels) do
-		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 5 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for i, getter in ipairs(self.gui.aero.getters) do
-		getter:SetPosition(Vector2(150, 10 + 22 * (i - 1)))
+		getter:SetPosition(Vector2(150, 5 + 22 * (i - 1)))
 	end
 	
 	for i, setter in pairs(self.gui.aero.setters) do
-		setter:SetPosition(Vector2(225, 5 + 22 * (i - 1)))
+		setter:SetPosition(Vector2(225, 0 + 22 * (i - 1)))
 		setter:SetWidth(57)
 		setter:SetText("")
 	end
@@ -455,15 +481,65 @@ function Tuner:VehicleUpdate()
 	self.gui.veh.getters[3]:SetText(f("%s", self.veh:GetTemplate()))
 	self.gui.veh.getters[4]:SetText(f("%s", self.veh:GetClass()))
 	self.gui.veh.getters[5]:SetText(f("%s", self.veh:GetDecal()))
-	self.gui.veh.getters[6]:SetText(f("%g", self.veh:GetHealth()))
+	self.gui.veh.getters[6]:SetText(f("%i%s", self.veh:GetHealth() * 100, "%"))
 	self.gui.veh.getters[7]:SetText(f("%s", self.veh:GetDriver()))
-	self.gui.veh.getters[8]:SetText(f("%i", self.veh:GetMass()))
-	self.gui.veh.getters[9]:SetText(f("%i", self.veh:GetTopSpeed()))
+	self.gui.veh.getters[8]:SetText(f("%i kg", self.veh:GetMass()))
+	
+	local s = self.veh:GetTopSpeed()
+	self.gui.veh.getters[9]:SetText(f("%i m/s, %i km/h, %i mi/h", s, s * 3.6, s * 2.234))
 	self.gui.veh.getters[10]:SetText(f("%i", self.veh:GetMaxRPM()))
 	self.gui.veh.getters[11]:SetText(f("%i", self.veh:GetRPM()))
-	self.gui.veh.getters[12]:SetText(f("%i", self.veh:GetTorque()))
+	
+	local t = self.veh:GetTorque()
+	self.gui.veh.getters[12]:SetText(f("%i N", t))
+	
 	self.gui.veh.getters[13]:SetText(f("%i", self.veh:GetWheelCount()))
+	
+	if self.advanced then
 
+		self.gui.veh.getters[14]:SetText(f("%s / %s", self.veh:GetColors()))
+		
+		local p = self.veh:GetPosition()
+		self.gui.veh.getters[15]:SetText(f("%i, %i, %i", p.x, p.y, p.z))
+		self.gui.veh.getters[16]:SetText(f("%i, %i, %i", p.x + 16384, p.y - 200, p.z + 16384))
+		
+		local a = self.veh:GetAngle()
+		self.gui.veh.getters[17]:SetText(f("%.3f, %.3f, %.3f rad", a.yaw, a.pitch, a.roll))
+		self.gui.veh.getters[18]:SetText(f("%i, %i, %i deg", math.deg(a.yaw), math.deg(a.pitch), math.deg(a.roll)))
+		
+		local lv = self.veh:GetLinearVelocity()
+		local ls = lv:Length()
+		self.gui.veh.getters[19]:SetText(f("%i, %i, %i m/s", lv.x, lv.y, lv.z))
+		self.gui.veh.getters[20]:SetText(f("%i m/s, %i, km/h, %i mi/h", ls, ls * 3.6, ls * 2.234))
+		
+		local av = self.veh:GetAngularVelocity()
+		local as = av:Length()
+		self.gui.veh.getters[21]:SetText(f("%i, %i, %i rad/s", av.x, av.y, av.z))
+		self.gui.veh.getters[22]:SetText(f("%.3f rad/s, %i deg/s", as, as * 180 / math.pi))
+		
+		if ls < 0.1 then 
+			self.timer = Timer()
+			self.gui.veh.getters[23]:SetText("")
+		elseif self.timer and ls > 100 / 3.6 then
+			self.time = self.timer:GetSeconds()
+			self.gui.veh.getters[23]:SetText(f("%.3f s", self.time))
+			self.timer = nil
+		end
+		
+		if not self.peak_ls then self.peak_ls = 0 end
+		if ls > self.peak_ls then self.peak_ls = ls end
+		self.gui.veh.getters[24]:SetText(f("%i m/s, %i km/h, %i mi/h", self.peak_ls, self.peak_ls * 3.6, self.peak_ls * 2.234))
+		
+		if not self.peak_as then self.peak_as = 0 end
+		if as > self.peak_as then self.peak_as = as end
+		self.gui.veh.getters[25]:SetText(f("%.3f rad/s, %i deg/s", self.peak_as, self.peak_as * 180 / math.pi))
+		
+		if not self.peak_t then self.peak_t = 0 end
+		if t > self.peak_t then self.peak_t = t end
+		self.gui.veh.getters[26]:SetText(f("%i N", self.peak_t))
+
+	end	
+	
 end
 
 function Tuner:TransmissionUpdate()
@@ -548,7 +624,6 @@ function Tuner:KeyUp(args)
 		local visible = self.gui.window:GetVisible()
 		self.gui.window:SetVisible(not visible)
 		Mouse:SetVisible(not visible)
-		self.gui.window:SetSize(Vector2(315, 350))
 		self.gui.tabs:SetCurrentTab(self.gui.veh.button)
 	end
 	
@@ -589,6 +664,11 @@ function Tuner:Disable()
 	self.trans = nil
 	self.aero = nil
 	self.susp = nil
+	
+	self.peak_ls = nil
+	self.peak_as = nil
+	self.peak_t = nil
+	self.time = nil
 
 end
 
