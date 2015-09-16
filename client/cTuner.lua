@@ -92,7 +92,7 @@ function Tuner:InitGUI()
 				setter:Hide()
 			end
 		end
-		self.gui.window:SetSize(Vector2(150 + 80 * count, 516))
+		self.gui.window:SetSize(Vector2(150 + 80 * count, 510))
 	end)
 	
 	self:InitVehicleGUI()
@@ -365,13 +365,13 @@ function Tuner:InitSuspensionGUI()
 	self.gui.susp.labels[20]:SetText("Damping Relaxation")
 
 	for i, label in ipairs(self.gui.susp.labels) do
-		label:SetPosition(Vector2(5, 10 + 22 * (i - 1)))
+		label:SetPosition(Vector2(5, 5 + 22 * (i - 1)))
 		label:SizeToContents()
 	end
 	
 	for wheel in ipairs(self.gui.susp) do
 		for i, getter in ipairs(self.gui.susp[wheel].getters) do
-			getter:SetPosition(Vector2(150 + 75 * (wheel - 1), 10 + 22 * (i - 1)))
+			getter:SetPosition(Vector2(150 + 75 * (wheel - 1), 5 + 22 * (i - 1)))
 			getter:SetWidth(70)
 		end
 	end
@@ -435,7 +435,7 @@ function Tuner:InitSuspensionGUI()
 		end)		
 	
 		for i, setter in ipairs(self.gui.susp[wheel].setters) do
-			setter:SetPosition(Vector2(150 + 75 * (wheel - 1), 225 + 22 * (i - 1)))
+			setter:SetPosition(Vector2(150 + 75 * (wheel - 1), 220 + 22 * (i - 1)))
 			setter:SetWidth(57)
 			setter:SetText("")
 		end
@@ -468,8 +468,7 @@ function Tuner:VehicleUpdate()
 
 	if not self.veh then return end
 	
-	local f = string.format
-	local rpm = self.veh:GetRPM()
+	local f = string.format 
 	local t = self.veh:GetTorque()
 	local ratios = self.trans:GetGearRatios()
 	local s = self.veh:GetLinearVelocity():Length()
@@ -477,13 +476,13 @@ function Tuner:VehicleUpdate()
 
 	self.gui.veh.getters[7]:SetText(f("%i%s", self.veh:GetHealth() * 100, "%"))
 	self.gui.veh.getters[8]:SetText(f("%i kg", self.veh:GetMass()))
-	self.gui.veh.getters[11]:SetText(f("%i", rpm))
+	self.gui.veh.getters[11]:SetText(f("%i", self.veh:GetRPM()))
 	self.gui.veh.getters[12]:SetText(f("%i N", t))
 	
 	self.peak_t = self.peak_t or 0
 	if t > self.peak_t then 
 		self.peak_t = t
-		self.gui.veh.getters[13]:SetText(f("%i N", self.peak_t, rpm))
+		self.gui.veh.getters[13]:SetText(f("%i N", self.peak_t))
 	end
 
 	self.gui.veh.getters[14]:SetText(f("%i N", wt))
@@ -514,12 +513,12 @@ function Tuner:TransmissionUpdate()
 	
 	self.gui.trans.setters[4]:SetChecked(self.trans:GetManual())
 
-	self.gui.trans.getters[1]:SetText(f("%g", self.trans:GetUpshiftRPM()))
-	self.gui.trans.getters[2]:SetText(f("%g", self.trans:GetDownshiftRPM()))
-	self.gui.trans.getters[3]:SetText(f("%g", self.trans:GetMaxGear()))
+	self.gui.trans.getters[1]:SetText(f("%i", self.trans:GetUpshiftRPM()))
+	self.gui.trans.getters[2]:SetText(f("%i", self.trans:GetDownshiftRPM()))
+	self.gui.trans.getters[3]:SetText(f("%i", self.trans:GetMaxGear()))
 	self.gui.trans.getters[4]:SetText(f("%s", self.trans:GetManual()))
 	self.gui.trans.getters[5]:SetText(f("%g", self.trans:GetClutchDelayTime()))
-	self.gui.trans.getters[6]:SetText(f("%g", self.trans:GetGear()))
+	self.gui.trans.getters[6]:SetText(f("%i", self.trans:GetGear()))
 	
 	local gear_ratios = self.trans:GetGearRatios()
 	for wheel, ratio in ipairs(gear_ratios) do
