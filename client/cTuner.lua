@@ -588,6 +588,7 @@ function Tuner:KeyUp(args)
 		self.gui.window:SetVisible(not visible)
 		Mouse:SetVisible(not visible)
 		self.gui.tabs:SetCurrentTab(self.gui.veh.button)
+		self.timer = nil
 	end
 	
 end
@@ -620,14 +621,15 @@ function Tuner:Disable()
 
 	self.gui.window:SetVisible(false)
 	Mouse:SetVisible(false)
+
 	self.veh = nil
 	self.trans = nil
 	self.aero = nil
 	self.susp = nil
-	
 	self.peak_s = nil
 	self.peak_t = nil
 	self.time = nil
+	self.timer = nil
 
 end
 
